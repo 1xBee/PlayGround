@@ -63,6 +63,9 @@
   }
   function clearAllInputs(selectors) {
     document.querySelectorAll(selectors.inputs).forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
       const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
         window.HTMLInputElement.prototype,
         "value"
@@ -461,12 +464,90 @@
     }
   };
 
+  // src/lib/tab-navigation.js
+  function clickTabByLetter(letter, reverse = false) {
+    letter = letter.toLowerCase();
+    const tabs = Array.from(document.querySelectorAll("a.nav-link"));
+    if (!tabs.length) {
+      console.log("No tabs found");
+      return false;
+    }
+    let startIdx = 0;
+    const activeTab = document.querySelector("a.nav-link.active");
+    if (activeTab) {
+      const activeIndex = tabs.indexOf(activeTab);
+      if (activeIndex !== -1) {
+        startIdx = reverse ? (activeIndex - 1 + tabs.length) % tabs.length : (activeIndex + 1) % tabs.length;
+      }
+    }
+    let found = null;
+    for (let i = 0; i < tabs.length; i++) {
+      const idx = reverse ? (startIdx - i + tabs.length) % tabs.length : (startIdx + i) % tabs.length;
+      const tab = tabs[idx];
+      const tabText = tab.textContent.trim().toLowerCase();
+      if (tabText.startsWith(letter)) {
+        found = tab;
+        break;
+      }
+    }
+    if (found) {
+      found.click();
+      console.log("Clicked tab:", found.textContent.trim());
+      return true;
+    }
+    return false;
+  }
+
+  // src/services/orders-edit-keyboard-handler.js
+  var OrdersEditKeyboardHandler = class {
+    constructor() {
+      this.vCtrl = false;
+      createStatusIndicator();
+    }
+    handleKeyUp(e) {
+      if (e.key === "Control" && this.vCtrl) {
+        showGreenLight();
+      }
+    }
+    handleKeyDown(e) {
+      if (e.key === "Control") {
+        this.vCtrl = true;
+        return;
+      } else if (e.key === "Shift")
+        return;
+      if (this.vCtrl && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+      }
+      this.processKey(e);
+      this.vCtrl = false;
+      hideLight();
+    }
+    handleClick() {
+      this.stopAll();
+    }
+    stopAll() {
+      this.vCtrl = false;
+      hideLight();
+    }
+    processKey(e) {
+      const { key, ctrlKey, shiftKey, altKey } = e;
+      if (this.vCtrl && !ctrlKey && !altKey) {
+        if (key.length === 1 && /[a-zA-Z]/.test(key)) {
+          clickTabByLetter(key, shiftKey);
+          return;
+        }
+      }
+    }
+  };
+
   // src/app/index.js
   var path = window.location.pathname;
   var tablePages = ["/Items", "/Deliveries", "/Orders", "/Logs", "/Users", "/POs", "/Customers", "/Vendors", "/VendorGroups"];
   var handler;
   if (path === "/Account/Login") {
     handler = new LoginKeyboardHandler();
+  } else if (path.startsWith("/Orders/Edit")) {
+    handler = new OrdersEditKeyboardHandler();
   } else if (tablePages.some((page) => path.startsWith(page))) {
     handler = new TableKeyboardHandler();
   } else {

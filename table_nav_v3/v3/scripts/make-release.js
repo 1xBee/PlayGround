@@ -1,6 +1,7 @@
 // scripts/make-release.js
 const fs = require('fs');
 const path = require('path');
+const crx3 = require('crx3');
 
 // Remove old release folder
 const releaseDir = path.join(__dirname, '..', 'release');
@@ -37,6 +38,19 @@ filesToCopy.forEach(({ from, to }) => {
 });
 
 console.log('🎉 Release folder created successfully!');
-console.log(`📦 Location: ${releaseDir}`);
 
-// npm run release
+// Create CRX file
+(async () => {
+  try {
+    await crx3([releaseDir], {
+      keyPath: path.join(__dirname, '..', 'key.pem'),
+      crxPath: path.join(__dirname, '..', 'extension.crx'),
+      zipPath: path.join(__dirname, '..', 'extension.zip')
+    });
+    
+    console.log('📦 CRX file created: extension.crx');
+    console.log('📦 ZIP file created: extension.zip');
+  } catch (err) {
+    console.error('❌ Error creating CRX:', err.message);
+  }
+})();

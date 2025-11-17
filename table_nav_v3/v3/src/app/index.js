@@ -1,6 +1,7 @@
 // src/app/index.js
 import TableKeyboardHandler from '../services/table-keyboard-handler.js';
 import LoginKeyboardHandler from '../services/login-keyboard-handler.js';
+import OrdersEditKeyboardHandler from '../services/orders-edit-keyboard-handler.js';
 
 // Router: Select handler based on path
 const path = window.location.pathname;
@@ -11,11 +12,11 @@ const tablePages = ['/Items', '/Deliveries', '/Orders', '/Logs', '/Users', '/POs
 let handler;
 if (path === '/Account/Login') {
   handler = new LoginKeyboardHandler();
+} else if (path.startsWith('/Orders/Edit')) {
+  handler = new OrdersEditKeyboardHandler();
 } else if (tablePages.some(page => path.startsWith(page))) {
-  // Table handler for specified pages
   handler = new TableKeyboardHandler();
 } else {
-  // Default fallback (optional)
   handler = new TableKeyboardHandler();
 }
 
